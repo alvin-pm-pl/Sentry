@@ -14,11 +14,21 @@ After creating new project, Fill the `sentry-dsn` field in config.yml with your 
 # You will get the DSN link when you create a new project in Sentry.
 # Example: https://<your_sentry_domain>/<your_project_id>/
 sentry-dsn: "<your sentry dsn link>"
+
+# Other options that will be passed to Sentry client.
+# Example:
+# sentry-options:
+#   environment: production
+#   release: 1.0.0
+
+sentry-options: []
 ```
 
 Done! That's it!
 
 Now stay calm and enjoy the server.
+
+**It is important that You should create the project as PHP to use this plugin.**
 
 # Example Error Log
 
