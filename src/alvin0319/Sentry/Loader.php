@@ -97,4 +97,10 @@ final class Loader extends PluginBase{
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 		}
 	}
+
+	protected function onDisable() : void{
+		if($this->getServer()->getLogger() instanceof SentryLogger){
+			$this->getServer()->getLogger()->shutdownLogWriterThread();
+		}
+	}
 }

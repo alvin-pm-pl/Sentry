@@ -52,4 +52,11 @@ final class SentryLogger extends MainLogger{
 		parent::logException($e, $trace);
 		$this->sentryThread->writeException($e);
 	}
+
+	public function shutdownLogWriterThread() : void{
+		parent::shutdownLogWriterThread();
+		if(!$this->sentryThread->isJoined() && \Thread::getCurrentThreadId() === $this->sentryThread->getCreatorId()){
+			$this->sentryThread->shutdown();
+		}
+	}
 }

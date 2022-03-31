@@ -43,14 +43,16 @@ class SentryThread extends Thread{
 	/** @var \Threaded */
 	private \Threaded $exceptions;
 
+	private bool $shutdown = false;
+
 	public function __construct(private string $vendorPath){
 		$this->exceptions = new \Threaded();
 	}
 
 	public function onRun() : void{
-        require $this->vendorPath;
+		require $this->vendorPath;
 
-		while(!$this->isKilled){
+		while(!$this->shutdown){
 			foreach($this->readExceptions() as $e){
 				captureException($e);
 			}
@@ -73,5 +75,13 @@ class SentryThread extends Thread{
 			}
 			return $ret;
 		});
+	}
+
+	public function shutdown() : void{
+		$this->synchronized(function() : void{
+			$this->shutdown = true;
+			$this->notify();
+		});
+		$this->join();
 	}
 }
