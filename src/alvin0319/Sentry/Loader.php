@@ -48,6 +48,8 @@ use function Sentry\init;
 
 final class Loader extends PluginBase{
 
+	public static string $vendorPath = "";
+
 	private bool $enabled = true;
 
 	protected function onLoad() : void{
@@ -62,7 +64,9 @@ final class Loader extends PluginBase{
 			$this->enabled = false;
 			return;
 		}
-		$vendorPath = Path::join($this->getFile(), "vendor", "autoload.php");
+		self::$vendorPath = Path::join($this->getFile(), "vendor", "autoload.php");
+
+		require self::$vendorPath;
 
 		init(array_merge([
 			"dsn" => $this->getConfig()->get("sentry-dsn")
@@ -74,7 +78,7 @@ final class Loader extends PluginBase{
 		/** @var MainLogger $value */
 		$value = $prop->getValue($this->getServer());
 		unset($value); // make sure to call __destruct()
-		$logger = new SentryLogger($vendorPath, Path::join($this->getServer()->getDataPath(), "server.log"), Terminal::hasFormattingCodes(), "Server", new \DateTimeZone(Timezone::get()));
+		$logger = new SentryLogger(Path::join($this->getServer()->getDataPath(), "server.log"), Terminal::hasFormattingCodes(), "Server", new \DateTimeZone(Timezone::get()));
 		$prop->setValue($this->getServer(), $logger);
 		$this->getScheduler()->scheduleTask(new ClosureTask(function() : void{
 			foreach($this->getServer()->getPluginManager()->getPlugins() as $plugin){

@@ -39,16 +39,16 @@ use const PTHREADS_INHERIT_NONE;
 
 final class SentryLogger extends MainLogger{
 
-    private SentryThread $sentryThread;
+	private SentryThread $sentryThread;
 
-    public function __construct(string $vendorPath, string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
-        parent::__construct($logFile, $useFormattingCodes, $mainThreadName, $timezone, $logDebug);
+	public function __construct(string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
+		parent::__construct($logFile, $useFormattingCodes, $mainThreadName, $timezone, $logDebug);
 
-        $this->sentryThread = new SentryThread($vendorPath);
-        $this->sentryThread->start(PTHREADS_INHERIT_NONE);
-    }
+		$this->sentryThread = new SentryThread(Loader::$vendorPath);
+		$this->sentryThread->start(PTHREADS_INHERIT_NONE);
+	}
 
-    public function logException(\Throwable $e, $trace = null){
+	public function logException(\Throwable $e, $trace = null){
 		parent::logException($e, $trace);
 		$this->sentryThread->writeException($e);
 	}
