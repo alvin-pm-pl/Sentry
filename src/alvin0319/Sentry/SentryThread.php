@@ -37,7 +37,7 @@ class SentryThread extends Thread{
     private function readExceptions() : array {
         return $this->synchronized(function() : array{
             $ret = [];
-            while(($e = $this->exceptions->shift())) {
+            while(($e = $this->exceptions->shift()) !== null) {
                 $ret[] = igbinary_unserialize($e);
             }
             return $ret;
