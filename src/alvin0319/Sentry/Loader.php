@@ -12,6 +12,7 @@ use pocketmine\utils\MainLogger;
 use pocketmine\utils\Terminal;
 use pocketmine\utils\Timezone;
 use Webmozart\PathUtil\Path;
+use function array_merge;
 use function is_dir;
 use function Sentry\init;
 
@@ -32,9 +33,9 @@ final class Loader extends PluginBase{
 			return;
 		}
 		require Path::join($this->getFile(), "vendor", "autoload.php");
-		init([
+		init(array_merge([
 			"dsn" => $this->getConfig()->get("sentry-dsn")
-		]);
+		], $this->getConfig()->get("sentry-options", [])));
 		$prop = new \ReflectionProperty(Server::class, "logger");
 		if(!$prop->isPublic()){
 			$prop->setAccessible(true);

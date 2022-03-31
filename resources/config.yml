@@ -5,3 +5,11 @@
 # You will get the DSN link when you create a new project in Sentry.
 # Example: https://<your_sentry_domain>/<your_project_id>/
 sentry-dsn: ""
+
+# Other options that will be passed to Sentry client.
+# Example:
+# sentry-options:
+#   environment: production
+#   release: 1.0.0
+
+sentry-options: []
