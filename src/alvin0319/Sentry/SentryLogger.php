@@ -41,10 +41,10 @@ final class SentryLogger extends MainLogger{
 
     private SentryThread $sentryThread;
 
-    public function __construct(string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
+    public function __construct(string $vendorPath, string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
         parent::__construct($logFile, $useFormattingCodes, $mainThreadName, $timezone, $logDebug);
 
-        $this->sentryThread = new SentryThread();
+        $this->sentryThread = new SentryThread($vendorPath);
         $this->sentryThread->start(PTHREADS_INHERIT_NONE);
     }
 
