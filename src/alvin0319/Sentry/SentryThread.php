@@ -30,6 +30,7 @@ class SentryThread extends Thread{
     public function writeException(\Throwable $t) {
         $this->synchronized(function() use ($t) {
             $this->exceptions[] = igbinary_serialize($t);
+            $this->notify();
         });
     }
 
