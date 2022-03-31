@@ -1,0 +1,7 @@
+# Sentry Main configuration file
+# Configurations in this file may not appear automatically upon update, and some settings may crash the server.
+
+# Sentry DSN link which is used to send errors to Sentry.
+# You will get the DSN link when you create a new project in Sentry.
+# Example: https://<your_sentry_domain>/<your_project_id>/
+sentry-dsn: ""
