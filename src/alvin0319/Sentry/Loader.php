@@ -62,7 +62,8 @@ final class Loader extends PluginBase{
 			$this->enabled = false;
 			return;
 		}
-		require Path::join($this->getFile(), "vendor", "autoload.php");
+		$vendorPath = Path::join($this->getFile(), "vendor", "autoload.php");
+
 		init(array_merge([
 			"dsn" => $this->getConfig()->get("sentry-dsn")
 		], $this->getConfig()->get("sentry-options", [])));
@@ -73,7 +74,7 @@ final class Loader extends PluginBase{
 		/** @var MainLogger $value */
 		$value = $prop->getValue($this->getServer());
 		unset($value); // make sure to call __destruct()
-		$logger = new SentryLogger(Path::join($this->getServer()->getDataPath(), "server.log"), Terminal::hasFormattingCodes(), "Server", new \DateTimeZone(Timezone::get()));
+		$logger = new SentryLogger($vendorPath, Path::join($this->getServer()->getDataPath(), "server.log"), Terminal::hasFormattingCodes(), "Server", new \DateTimeZone(Timezone::get()));
 		$prop->setValue($this->getServer(), $logger);
 		$this->getScheduler()->scheduleTask(new ClosureTask(function() : void{
 			foreach($this->getServer()->getPluginManager()->getPlugins() as $plugin){

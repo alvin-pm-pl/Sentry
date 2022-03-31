@@ -43,11 +43,13 @@ class SentryThread extends Thread{
 	/** @var \Threaded */
 	private \Threaded $exceptions;
 
-	public function __construct(){
+	public function __construct(private string $vendorPath){
 		$this->exceptions = new \Threaded();
 	}
 
 	public function onRun() : void{
+        require $this->vendorPath;
+
 		while(!$this->isKilled){
 			foreach($this->readExceptions() as $e){
 				captureException($e);
