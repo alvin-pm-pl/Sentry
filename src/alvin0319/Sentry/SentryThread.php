@@ -34,29 +34,54 @@ declare(strict_types=1);
 
 namespace alvin0319\Sentry;
 
-use pocketmine\utils\MainLogger;
-use const PTHREADS_INHERIT_NONE;
+use pocketmine\thread\Thread;
+use function igbinary_unserialize;
+use function Sentry\captureException;
 
-final class SentryLogger extends MainLogger{
+class SentryThread extends Thread{
 
-	private SentryThread $sentryThread;
+	/** @var \Threaded */
+	private \Threaded $exceptions;
 
-	public function __construct(string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
-		parent::__construct($logFile, $useFormattingCodes, $mainThreadName, $timezone, $logDebug);
+	private bool $shutdown = false;
 
-		$this->sentryThread = new SentryThread(Loader::$vendorPath);
-		$this->sentryThread->start(PTHREADS_INHERIT_NONE);
+	public function __construct(private string $vendorPath){
+		$this->exceptions = new \Threaded();
 	}
 
-	public function logException(\Throwable $e, $trace = null){
-		parent::logException($e, $trace);
-		$this->sentryThread->writeException($e);
-	}
+	public function onRun() : void{
+		require $this->vendorPath;
 
-	public function shutdownLogWriterThread() : void{
-		parent::shutdownLogWriterThread();
-		if(!$this->sentryThread->isJoined() && \Thread::getCurrentThreadId() === $this->sentryThread->getCreatorId()){
-			$this->sentryThread->shutdown();
+		while(!$this->shutdown){
+			foreach($this->readExceptions() as $e){
+				captureException($e);
+			}
+			$this->wait();
 		}
+	}
+
+	public function writeException(\Throwable $t){
+		$this->synchronized(function() use ($t){
+			$this->exceptions[] = igbinary_serialize($t);
+			$this->notify();
+		});
+	}
+
+	private function readExceptions() : array{
+		return $this->synchronized(function() : array{
+			$ret = [];
+			while(($e = $this->exceptions->shift()) !== null){
+				$ret[] = igbinary_unserialize($e);
+			}
+			return $ret;
+		});
+	}
+
+	public function shutdown() : void{
+		$this->synchronized(function() : void{
+			$this->shutdown = true;
+			$this->notify();
+		});
+		$this->join();
 	}
 }
