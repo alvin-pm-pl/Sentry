@@ -1,6 +1,13 @@
 # Sentry
 A PocketMine-MP plugin for logging Exceptions to a [Sentry](https://sentry.io) server.
 
+# Asynchronous logging
+
+If you want to log exceptions in a thread-safe way, you can use the [thread](https://github.com/alvin0319/Sentry/tree/thread) branch.
+I am sure if plugin developers don't abuse `MainLogger::logException()` it won't be matter.
+
+but if you don't trust them you can use thread branch anyway.
+
 # Getting started
 Before you use this plugin, You'll need to create your project on [Sentry](https://sentry.io) and get your DSN.
 
