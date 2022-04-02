@@ -35,28 +35,12 @@ declare(strict_types=1);
 namespace alvin0319\Sentry;
 
 use pocketmine\utils\MainLogger;
-use const PTHREADS_INHERIT_NONE;
+use function Sentry\captureException;
 
 final class SentryLogger extends MainLogger{
 
-	private SentryThread $sentryThread;
-
-	public function __construct(string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
-		parent::__construct($logFile, $useFormattingCodes, $mainThreadName, $timezone, $logDebug);
-
-		$this->sentryThread = new SentryThread(Loader::$vendorPath);
-		$this->sentryThread->start(PTHREADS_INHERIT_NONE);
-	}
-
 	public function logException(\Throwable $e, $trace = null){
 		parent::logException($e, $trace);
-		$this->sentryThread->writeException($e);
-	}
-
-	public function shutdownLogWriterThread() : void{
-		parent::shutdownLogWriterThread();
-		if(!$this->sentryThread->isJoined() && \Thread::getCurrentThreadId() === $this->sentryThread->getCreatorId()){
-			$this->sentryThread->shutdown();
-		}
+		captureException($e);
 	}
 }
