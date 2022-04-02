@@ -34,29 +34,72 @@ declare(strict_types=1);
 
 namespace alvin0319\Sentry;
 
+use Http\Promise\Promise;
 use pocketmine\utils\MainLogger;
-use const PTHREADS_INHERIT_NONE;
+use Psr\Http\Message\ResponseInterface;
+use Sentry\Event;
+use Sentry\EventHint;
+use Sentry\EventType;
+use Sentry\SentrySdk;
+use function sprintf;
 
 final class SentryLogger extends MainLogger{
 
-	private SentryThread $sentryThread;
-
-	public function __construct(string $logFile, bool $useFormattingCodes, string $mainThreadName, \DateTimeZone $timezone, bool $logDebug = false){
-		parent::__construct($logFile, $useFormattingCodes, $mainThreadName, $timezone, $logDebug);
-
-		$this->sentryThread = new SentryThread(Loader::$vendorPath);
-		$this->sentryThread->start(PTHREADS_INHERIT_NONE);
-	}
-
 	public function logException(\Throwable $e, $trace = null){
 		parent::logException($e, $trace);
-		$this->sentryThread->writeException($e);
-	}
+		$client = SentrySdk::getCurrentHub()->getClient();
+		(function() use ($e, $client) : void{
+			/* @noinspection PhpUndefinedMethodInspection */
+			$scope = $this->getScope();
+			(function() use ($scope, $e) : void{
+				$hint = new EventHint();
+				$hint->exception = $e;
+				/* @noinspection PhpUndefinedMethodInspection */
+				/** @var Event $event */
+				$event = $this->prepareEvent(Event::createEvent(), $hint, $scope);
+				if($event === null){
+					return;
+				}
+				/* @noinspection PhpUndefinedFieldInspection */
+				$transport = $this->transport;
+				(function() use ($event) : void{
+					/* @noinspection PhpUndefinedFieldInspection */
+					$dsn = $this->options->getDsn();
 
-	public function shutdownLogWriterThread() : void{
-		parent::shutdownLogWriterThread();
-		if(!$this->sentryThread->isJoined() && \Thread::getCurrentThreadId() === $this->sentryThread->getCreatorId()){
-			$this->sentryThread->shutdown();
-		}
+					if($dsn === null){
+						throw new \RuntimeException(sprintf('The DSN option must be set to use the "%s" transport.', self::class));
+					}
+
+					$eventType = $event->getType();
+
+					/* @noinspection PhpUndefinedFieldInspection */
+					if($this->rateLimiter->isRateLimited($eventType)){
+						/* @noinspection PhpUndefinedFieldInspection */
+						$this->warning(
+							sprintf('Rate limit exceeded for sending requests of type "%s".', (string) $eventType)
+						);
+						return;
+					}
+					if(EventType::transaction() === $eventType){
+						/* @noinspection PhpUndefinedFieldInspection */
+						$request = $this->requestFactory->createRequest('POST', $dsn->getEnvelopeApiEndpointUrl())
+							->withHeader('Content-Type', 'application/x-sentry-envelope')
+							->withBody($this->streamFactory->createStream($this->payloadSerializer->serialize($event)));
+					}else{
+						/* @noinspection PhpUndefinedFieldInspection */
+						$request = $this->requestFactory->createRequest('POST', $dsn->getStoreApiEndpointUrl())
+							->withHeader('Content-Type', 'application/json')
+							->withBody($this->streamFactory->createStream($this->payloadSerializer->serialize($event)));
+					}
+					/** @var Promise $promise */
+					/* @noinspection PhpUndefinedFieldInspection */
+					$promise = $this->httpClient->sendAsyncRequest($request);
+					$promise->then(function(ResponseInterface $response) : void{
+						/* @noinspection PhpUndefinedFieldInspection */
+						$this->rateLimiter->handleResponse($response);
+					});
+				})->call($transport);
+			})->call($client);
+		})->call(SentrySdk::getCurrentHub());
 	}
 }
